@@ -1,0 +1,32 @@
+name: Promote signed test channel
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published immutable client-vVERSION prerelease tag
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: signed-channel-promotion
+  cancel-in-progress: false
+  queue: max
+jobs:
+  promote:
+    if: github.repository == 'gene9831/codex-usage-releases' && (github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'client-v'))
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with: { node-version: 22 }
+      - name: Verify exact signature and advance only the matching test channel
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
+        run: node promote-channel.mjs
