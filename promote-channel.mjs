@@ -156,9 +156,11 @@ async function main() {
     const feedTag = `channel-${parsed.channel}`;
     let existing;
     try {
-      existing = JSON.parse(gh(['api', `repos/${REPOSITORY}/releases/tags/${feedTag}`]));
+      const found = releaseView(feedTag);
+      existing = { draft: found.isDraft, prerelease: found.isPrerelease, assets: found.assets };
     } catch (cause) {
-      if (!String(cause.stderr ?? '').includes('HTTP 404')) throw cause;
+      if (!/HTTP 404|release not found|no release found/i.test(String(cause.stderr ?? '')))
+        throw cause;
     }
     if (existing && !existing.prerelease) throw new Error('Channel pointer must be a prerelease');
     let canonical = null;
