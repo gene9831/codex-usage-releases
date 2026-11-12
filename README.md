@@ -13,7 +13,24 @@ Client distribution and signed update feeds for macOS ARM64, macOS Intel and Win
 
 Publish an existing alpha/beta/rc draft through GitHub Releases to trigger **Promote signed test channel**. It verifies the project signature, exact tag/channel, platform set and forward-only sequence/version, then advances only the matching channel. Identical repeated events are harmless; older or modified releases are refused. The workflow can also be dispatched with an existing published tag. Never overwrite assets of `client-vVERSION` releases. Keep all currently distributed signing public keys during key rotation.
 
-First install (download and review the installer before execution):
+New releases include version-pinned `install.sh` and `install.ps1` entrypoints. These commands become available after a release containing the scripts is published; older releases are immutable and are not retrofitted. Node.js22+ must already be installed. Default locations are `~/Applications/Codex Usage` on macOS and `%LOCALAPPDATA%\Programs\Codex Usage` on Windows, without administrator elevation.
+
+macOS:
+
+```bash
+curl -fsSL 'https://github.com/gene9831/codex-usage-releases/releases/latest/download/install.sh' | bash
+# Reuse the existing installation and its configuration:
+curl -fsSL 'https://github.com/gene9831/codex-usage-releases/releases/latest/download/install.sh' | bash -s -- --root "$HOME/Applications/codex-usage-client-darwin-arm64"
+```
+
+Windows PowerShell5.1/7:
+
+```powershell
+irm 'https://github.com/gene9831/codex-usage-releases/releases/latest/download/install.ps1' | iex
+& ([scriptblock]::Create((irm 'https://github.com/gene9831/codex-usage-releases/releases/latest/download/install.ps1'))) -Root 'D:\Tools\Codex Usage'
+```
+
+For prereleases, use the immutable `releases/download/client-vVERSION/install.sh` or `install.ps1` URL and explicitly select `--channel alpha` or `-Channel alpha`; GitHub latest excludes prereleases. Omit the channel on repeated installations to retain the current selection. You can download and review either entry script or the Node installer before executing it:
 
 ```bash
 node install-client.mjs --root "$HOME/Applications/Codex Usage" --channel stable
@@ -29,6 +46,10 @@ For a separate test install use `--channel alpha` and a separate directory, for 
 ./codex-usage --version
 ```
 
-Updates activate on the next invocation. Channel selection preserves replay protection and cannot force a version downgrade. Normal scheduled sync checks updates after the sync attempt; manual sync does not. Configuration and logs stay at the root; don't execute version directories directly. A browser first install may require one macOS trust action. The updater itself downloads and creates new verified files without running `xattr`; controlled attribute testing is not a substitute for clean-VM Gatekeeper acceptance.
+Legacy installations retain configuration, device credentials and logs; configured clients rebind their background task without requesting credentials again. Reinstalling an already-managed root runs the signed update path and preserves replay history and the automatic-update preference. Only an unconfigured first installation requires `setup`.
+
+The macOS manual installer automatically removes quarantine from enumerated client program paths after payload verification (or explicit trusted local `--from`), before the native keeper/scheduler runs. It does not recursively clear the entire directory or modify configuration/log attributes; `--no-xattr` disables this installer step. Ordinary automatic updates still create new verified files without invoking `xattr`.
+
+Updates activate on the next invocation. Channel selection preserves replay protection and cannot force a version downgrade. Normal scheduled sync checks updates after the sync attempt; manual sync does not. Configuration and logs stay at the root; don't execute version directories directly. Controlled attribute testing is not a substitute for clean-VM Gatekeeper acceptance.
 
 Distributed client JavaScript is readable. Server/web sources, user configuration, keys and logs are excluded from the packages. Client updates do not require an Apple developer account or a GitHub token.
